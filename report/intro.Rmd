@@ -1,0 +1,70 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## **Introduction**
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+source(here::here("scripts/setup.R"))
+```
+
+### **Overview and Motivation**
+
+Our inspiration was from Kaggle competition - [Instacart Market Basket
+Analysis](https://www.kaggle.com/competitions/instacart-market-basket-analysis/overview)
+which is also the data sets' resource. Instacart is a grocery ordering
+and delivery application. They provide an anonymized dataset that contains a
+sample of over 3 million grocery orders from more than 200,000
+Instacart's users, and for each user, they provide between 4 and 100 of
+their orders, with the sequence of products purchased in each order, the
+week and hour of day the order was placed, and a relative measure of
+time between orders (details of each data set will be introduced below).
+
+Instacart hopes campaign participants test models for predicting
+products that a user will buy again, try for the first time or add to
+cart next during a session, which may need to use the the models such as
+XGBoost, word2vec and Annoy (Jeremy Stanley, May 3, 2017).
+
+Repurchase predicting and order placement day predicting are the popular
+and helpful predictions among e-commerce companies. For example, it can be 
+applied to do personalization,  managing supply and demand, churn prediction, 
+improved customer service, etc (Bigcommerce Blog, Nick Shaw).  Amazon
+has already developed a patent called "anticipatory shipping" that can
+predict what and when people want to buy and ship packages even before
+customers have placed an order (The Economic Time, Jan 27, 2014). In this case, 
+they can largely optimizing logistics management, human and equipment resources and
+inventory arrangement, so that it would help them to decrease cost and
+increase profit. Meantime, this type of prediction also requires much
+more information of customers' behavior, such as items customers have
+searched for, the amount of time a user's cursor hovers over a product,
+times of clicks by users, purchase conversion rate of users' click, add
+to cart, collection and so on.
+
+In this case, since there are limitation of information and we would
+like to apply what models we have learnt in the course, we prefer to
+predict the day of the week that the order will be placed. Then, this
+would be an additional predictor to support the demand forecasting which
+is useful to make a right direction in the decision-making process, like
+inventory arrangement, for the e-commerce platform.
+
+### **Research questions**
+
+Overall, we produce a new dataset based on what we have downloaded from
+the competition website, and assume that:
+
+1.  one order = one user (as the data limitation in the data set
+    mentioned above);\
+2.  we have already known what customers will buy in the next time,
+    which means we have already known the demand.
+
+Thus, our research questions will be:
+
+-   What day of the week a given order will be placed?\
+    For this question, we will use supervised methods.         
+
+-   Are there any common components between departments or aisles?\
+    For this question, we will use unsupervised methods.                  
+
+

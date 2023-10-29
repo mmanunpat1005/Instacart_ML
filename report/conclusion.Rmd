@@ -1,0 +1,232 @@
+---
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+source(here::here("scripts/setup.R"))
+```
+
+## **Conclusion**
+
+For the supervised learning model, we use sensitivity, specificity,
+balanced accuracy, overall accuracy and kappa to compare the quality of
+different models.
+
+For the unsupervised learning model, we perform clustering and PCA
+analysis to group a set of instances/features that share some common
+characteristics. In addition, we also use the result from the PCA
+analysis to perform a hybrid supervised/unsupervised learning model to
+see if we can use PCA to improve the performance of the supervised
+learning model.
+
+### **Supervised learning**
+
+> **One day of the week - Unbalanced data**
+
+According to table1, table2, the overall accuracy and kappa of decision
+tree and multinomial regression are very low. What's more, there is a
+serious unbalance between sensitivity and specificity. The quality of
+both models is pretty similar and needs to be improved.
+
+Accuracy: decision tree:**O.211** multinomial logistic
+regression:**O.213**
+
+kappa:decision tree:**O.016** multinomial logistic regression:**O.01**
+
+***Table 1 - Decision Tree***
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+by_day_unbal_tree1 <- as.data.frame(c1$byClass) %>% select(1,2,11)
+by_day_unbal_tree2 <- data.frame(cbind(Accuracy=c1$overall[1],
+                                     Kappa=c1$overall[2]))
+row.names(by_day_unbal_tree2) <- "overall"
+
+knitr::kable(
+  list(by_day_unbal_tree2, by_day_unbal_tree1),
+  caption = 'decision tree',
+  booktabs = TRUE, valign = 't')
+```
+
+***Table 2 - Multinomial Logistic Regression***
+
+```{r}
+by_day_unbal_mlr1 <- as.data.frame(c5$byClass) %>% select(1,2,11)
+by_day_unbal_mlr2 <- data.frame(cbind(Accuracy=c5$overall[1],
+                                     Kappa=c5$overall[2]))
+row.names(by_day_unbal_mlr2) <- "overall"
+ 
+knitr::kable(
+  list(by_day_unbal_mlr2, by_day_unbal_mlr1),
+  caption = 'multinomial logistic regression',
+  booktabs = TRUE, valign = 't')
+```
+
+> **One day of the week - balanced data**
+
+According to table3 and table4, after we balanced the data and do the
+cross-validation, the difference between sensitivity and specificity is
+smaller. Even though the accuracy is a little lower, the kappa of both
+decision tree and multinomial logistic regression are higher.
+
+Accuracy: decision tree:**O.195** multinomial logistic
+regression:**O.176**
+
+kappa:decision tree:**O.035** multinomial logistic regression:**O.03**
+
+***Table 3 - with cross-validation: Decision Tree***
+
+```{r}
+by_day_bal_tree1 <- as.data.frame(c2$byClass) %>% select(1,2,11)
+by_day_bal_tree2 <- data.frame(cbind(Accuracy=c2$overall[1],
+                                     Kappa=c2$overall[2]))
+row.names(by_day_bal_tree2) <- "overall"
+
+knitr::kable(
+  list(by_day_bal_tree2, by_day_bal_tree1),
+  caption = 'with cross-validation: decision tree',
+  booktabs = TRUE, valign = 't')
+```
+
+***Table 4 - Multinomial Logistic Regression***
+
+```{r}
+by_day_bal_mlr1 <- as.data.frame(c6$byClass) %>% select(1,2,11)
+by_day_bal_mlr2 <- data.frame(cbind(Accuracy=c6$overall[1],
+                                     Kappa=c6$overall[2]))
+row.names(by_day_bal_mlr2) <- "overall"
+ 
+knitr::kable(
+  list(by_day_bal_mlr2, by_day_bal_mlr1),
+  caption = 'multinomial logistic regression',
+  booktabs = TRUE, valign = 't')
+```
+
+> **Weekdays and Weekend-Balanced data with Cross-Validation**
+
+According to the table5, the balanced accuracy and kappa is higher after
+we aggregate the days in a week into weekday and weekends. We will
+finally choose logistic regression model for it has highest balanced
+accuracy and kappa.
+
+***Table 5 - The scores of three models***
+
+```{r}
+final_table <- data.frame(cbind(Sensitivity=c(c3$byClass[1],
+                                              c4$byClass[1],
+                                              c7$byClass[1]),
+                                Specifity=c(c3$byClass[2],
+                                              c4$byClass[2],
+                                              c7$byClass[2]),
+                                Accuracy=c(c3$overall[1],
+                                           c4$overall[1],
+                                           c7$overall[1]),
+                                Balanced_accuracy=c(c3$byClass[11],
+                                              c4$byClass[11],
+                                              c7$byClass[11]),
+                                Kappa=c(c3$overall[2],
+                                           c4$overall[2],
+                                           c7$overall[2])))
+row.names(final_table) <- c("Decison Tree","Random Forest","Logistic Regression")
+
+kable(final_table, caption = "The scores of three models (Decison Tree, Random Forest, Logistic Regression)") %>%
+  kable_styling(bootstrap_options = "bordered") 
+```
+
+### **Unsupervised learning**
+
+> **Clustering**
+
+Clustering is a method that divides categorized or uncategorized data
+into similar groups or clusters. We used 2 methods for clustering,
+including Hierarchical clustering and Partitioning, and chose the number
+of clusters from statistics. We found that the number of clusters highly
+depend on the statistics chosen. For example, for the Partitioning
+method, the optimal number of clusters from Gap statistic is 13, while
+the optimal number from Silhouette is only 2.
+
+For Hierarchical clustering, we chose 3 as an optimal number of
+clusters. The main characteristics of each cluster are, for example,
+high "produce" for cluster 1, high "snacks" and "beverages" for cluster
+3. The average numbers of purchases from cluster 1 and 3 are
+significantly higher than cluster 2 in every department.
+
+For Partitioning methods, we chose 2 as an optimal number of clusters
+for both K-mean and PAM models. For K-mean, we found that cluster 2 has
+higher average numbers of purchases than cluster 1 in every department.
+This means that cluster 2 in K-mean has similar characteristics as
+cluster 1 and 3 from the Hierarchical clustering. For PAM, the results
+are very close to the results from K-mean.
+
+> **PCA**
+
+To derive the benefits of PCA and to test our hypothesis that grouping
+aisles reflects purchasing customer behavior better than grouping
+departments, we perform PCA by aisles. Non-scaled PCA is our focus to
+set the environment in line with the supervised learning analysis. As
+for the result, component1 to component28 (out of 134 components) can
+explain 75.5% of the total variation of the data. Fresh vegetable, fresh
+fruits and packaged vegetables fruits are the top three most variance
+and contributors to component1 and 2. Scaled PCA is also performed and
+we need 93 components out of 134 components to explain at least 75% of
+the total variation. Thus, we cannot derive the benefits of PCA and it
+also shows that each aisle is not correlated. Afterward, hybrid
+supervised and unsupervised learning approach grabs our attention. The
+1-28 components are applied to the best model from supervised learning
+approach which is the logistic regression model. However, we find that the hybrid method doesn't improve the accuracy of the prediction.
+
+## **Limitation**
+
+The data set provided by Instacart contains only a few variables,
+including products purchased per order, product description, day of the
+week of orders, and hours of orders. We found that this information is
+still not sufficient to create predictive models with high accuracy for
+commercial uses. However, Amazon is an ideal case study showing that,
+with high quality and comprehensive data set, it's even possible to use
+machine learning for a predictive analysis to anticipate and ship
+products before customers actually order it.
+
+We also find the limitation when running machine learning functions in R with too many observations. In our study, we focus only on the training data set, which contains over 100k observations and do not include the prior data set, which represents all historical orders before the training set and contains over a million observations. This is because the execution time is extremely long and there are errors regularly when we run the models with all historical data (prior + training).
+
+## **Further study**
+
+Machine learning and Artificial intelligence have play a key role in the
+boom of the e-commerce industry. There are a many applications that we
+can apply machine learning techniques in this industry. For example,
+Purchase and Repurchase prediction for predicting what orders customers
+will purchase next, Recommendation system for recommending products that
+users might would like to purchase. This system is very important behind
+the success of Amazon and even Netflix. There are also other
+applications such as Fraud prediction and Marketing campaign. However,
+in order to build these models with sufficient accuracy for commercial
+use, it's important to we need more data such as customer personal
+information, browsing history, click history to get a better
+understanding of customer behaviors.
+
+## **References**
+
+[Ivo Bernardo, Classification Decision Trees, Easily Explained, Aug 30,
+2021](https://towardsdatascience.com/classification-decision-trees-easily-explained-f1064dde175e)
+
+[Saikumar Talari, Random Forest® vs Decision Tree: Key Differences,
+February 18,
+2022](https://www.kdnuggets.com/2022/02/random-forest-decision-tree-key-differences.html#:~:text=The%20critical%20difference%20between%20the,work%20according%20to%20the%20output.)
+
+[Wikipedia, Multinomial logistic regression, 23 August
+2021](https://en.wikipedia.org/wiki/Multinomial_logistic_regression)
+
+S. Walusala W, R. Rimiru, C. Otieno, A hybrid machine learning approach
+for credit scoring using PCA and logistic regression, International
+journal of computer, ISSN 2307-4523.
+
+[Jeremy Stanley, 3 Million Instacart Orders, Open Sourced, May 3,
+2017](https://tech.instacart.com/3-million-instacart-orders-open-sourced-d40d29ead6f2)
+
+[Bigcommerce Blog, Nick Shaw, Ecommerce Machine Learning: AI's Role in
+the Future of Online
+Shopping](https://www.bigcommerce.com/blog/ecommerce-machine-learning/#machine-learning-has-developed-over-the-years)
+
+[The Economic Time, Amazon may predict and ship your order before you
+place it, Jan 27,
+2014](https://economictimes.indiatimes.com/tech/internet/amazon-may-predict-and-ship-your-order-before-you-place-it/articleshow/29445699.cms)

@@ -1,0 +1,350 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## **Exploratory Data Analysis**
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+source(here::here("scripts/setup.R"))
+```
+
+### **Data Description**
+
+#### **Table 1 - aisles**
+
+The aisle table shows aisle unique ids under `aisle_id` column and aisle
+names under `aisle` column, for example aisle_id of 1 represents the
+prepared soup salads aisle. There are 134 ids in total and n/a is not
+found in the table.
+
+```{r echo=FALSE, message=FALSE}
+aisles <- read.csv(here::here("data/aisles.csv"), header = TRUE)
+
+#missing value
+check_na_tab1 <- sum(is.na(aisles)) #0
+
+kable(aisles[,], caption = "The aisles table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+#### **Table 2 - departments**
+
+The department table shows department unique ids under `department_id`
+column and department names under `department_id` column, for example
+department_id of 1 represents the frozen department. There are 21 ids in
+total and n/a is not found in the table.
+
+```{r echo=FALSE, message=FALSE}
+departments <- read.csv(here::here("data/departments.csv"), header = TRUE)
+
+#missing value
+check_na_tab2 <- sum(is.na(departments)) #0
+
+kable(departments[,], caption = "The departments table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+#### **Table 3 - products**
+
+The product table shows product unique ids under `product_id` column and
+department names under `product_name` column, for example product_id of
+1 represents Chocolate Sandwich Cookies. This table also shows
+`aisle_id` and `department_id` that are associated with the product as
+well. There are approximately 50k ids in total and n/a is not found in
+the table.
+
+```{r echo=FALSE, message=FALSE}
+products <- read.csv(here::here("data/products.csv"), header = TRUE)
+
+#missing value
+check_na_tab3 <- sum(is.na(products)) #0
+
+kable(products[1:50,], caption = "The products table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+#### **Table 4 - order_products_train**
+
+This table shows the details of all order in the training data set
+provided by Instacart. It shows product_ids that are purchased in each
+order. For example, the order_id of 1 consists of 8 products, including
+the following product ids: 13176, 47209, 22035, etc. Also, there are
+\~131k orders in total and there is no n/a in the table.
+
+```{r echo=FALSE, message=FALSE}
+order_products_train <- read.csv(here::here("data/order_products__train.csv"), header = TRUE)
+
+#missing value
+check_na_tab4 <-sum(is.na(order_products_train)) #0
+
+kable(order_products_train[1:50,], caption = "The order_products_train table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+#### **Table 5 - purchase time per order table**
+
+This table shows the purchase time (day of week under `order_dow` column
+and hour of day under `order_hour_of_day` column) for each order. For
+example, the order_id of 1187899 has order_dow of 4 and order_hour of
+day of 8. This means this order was maded on Thursday (order_dow = 4) at
+8am (order_hour = 8).
+
+```{r, fig.height=6, fig.width=10}
+orders <- read.csv(here::here("data/orders.csv"), header = TRUE)
+
+orders <- orders %>% filter(eval_set == "train") 
+
+#missing value
+check_na_tab5 <- sum(is.na(orders))
+
+orders <- orders  %>% select(order_id, order_dow, order_hour_of_day)
+
+kable(orders[1:50,], caption = "The purchase time per order table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+#### **Table 6 - user_purchases**
+
+This table joins Table 1 - 5 together. Thus, this table will include all
+necessary information that we need in the analysis, including order_id,
+purchase time, aisle and department. Please note that we do not include
+product_id and product_name in this table because the dimensionality is
+too large (over 50k categories). Thus, in our analysis, we will mainly
+use department_id (21 cetegories) in our analysis and use aisle_id (134
+categories) in the PCA part in the unsupervised learning section.
+
+```{r echo=FALSE, message=FALSE}
+# Identify the products purchased with their departments and the time and day of consumption
+user_purchases <- orders %>%
+  left_join(order_products_train, by = "order_id") %>%
+  left_join(products, by = "product_id") %>%
+  left_join(aisles, by = c("aisle_id")) %>%
+  left_join(departments, by = c("department_id")) %>%
+  select(order_id, order_dow, order_hour_of_day, aisle_id, aisle, department_id, department)
+
+kable(user_purchases[1:50,], caption = "The user purchases table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Preparation for the analysis
+
+department_wide <- user_purchases %>%
+  group_by(order_id, department) %>%
+  summarise(product_num = n()) %>%
+  pivot_wider(names_from = "department", values_from = "product_num") %>%
+  left_join(orders, by = "order_id") %>%
+  relocate(order_dow, .before = `canned goods`) %>%
+  relocate(order_hour_of_day, .before = `canned goods`)
+
+department_wide[is.na(department_wide)] <- 0
+
+aisle_wide <- user_purchases %>%
+  group_by(order_id, aisle) %>%
+  summarise(product_num = n()) %>%
+  pivot_wider(names_from = "aisle", values_from = "product_num") %>%
+  left_join(orders, by = "order_id") %>%
+  relocate(order_dow, .before = `canned meat seafood`) %>%
+  relocate(order_hour_of_day, .before = `canned meat seafood`)
+
+aisle_wide[is.na(aisle_wide)] <- 0
+```
+
+### **Visualization**
+
+#### **Distribution of the order by time of purchase**
+
+The plot shows the distribution of the order by time (dow and hour).
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+kable(orders[1:50,], caption = "The purchase time per order table") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.height=5, fig.width=8}
+orders %>%
+  select(-order_id) %>%
+  inspect_num() %>%
+  show_plot(col_palette = 3)
+```
+
+
+We can observe on the left chart `oder_dow` that the most frequent days
+of ordering are Sunday's and Monday's comparing to the rest of the week,
+and on the right chart `order_hour_of_day`,we note a high demand of
+orders between 9am to 6pm.
+
+#### **Top 10 number of purchase by aisle**
+
+This table shows the top 10 aisles by the number of purchase. We can see
+that the most purchase aisles are fresh vegetables and fresh fruits
+(\~150k orders each).
+
+```{r echo=FALSE, message=FALSE}
+num_aisle_product <- user_purchases %>% 
+  group_by(aisle, department) %>%
+  summarise(total_order = n()) %>%
+  arrange(desc(total_order))
+
+kable(num_aisle_product[1:10,], caption = "The top 10 number of purchase by aisle") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+<br>
+
+```{r, fig.height=4, fig.width=8}
+
+fig <- num_aisle_product[1:10,] %>% plot_ly()
+fig <- fig %>% add_trace(x = ~reorder(aisle, -total_order), 
+                         y = ~total_order, type = 'bar', 
+                         name = "The number of purchase", 
+                         textposition = 'auto',
+                         offsetgroup = 1,
+                         marker = list(color = 'rgb(49,130,189)'))
+
+fig <- fig %>% layout(title = "The top 10 number of purchase by aisle", 
+                      xaxis = list(title = "", tickangle = -45),
+                      yaxis = list(title = "number of purchase"),
+         margin = list(b = 100),
+         barmode = 'group')
+
+fig
+
+```
+
+#### **The number of purchase by department**
+
+This table shows the top 10 departments by the number of purchase. We
+can see that the most purchase aisles is produce (\~409k orders).
+
+```{r echo=FALSE, message=FALSE}
+num_department_product <- user_purchases %>% 
+  group_by(department) %>%
+  summarise(total_order = n()) %>%
+  arrange(desc(total_order))
+
+kable(num_department_product[1:10,], caption = "The top 10 number of purchase by department") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+<br>
+
+```{r, fig.height=4, fig.width=8}
+
+fig <- num_department_product[] %>% plot_ly()
+fig <- fig %>% add_trace(x = ~reorder(department, -total_order), 
+                         y = ~total_order, type = 'bar', 
+                         name = "The number of purchase", 
+                         textposition = 'auto',
+                         offsetgroup = 1,
+                         marker = list(color = 'rgb(49,130,189)'))
+
+fig <- fig %>% layout(title = "The number of purchase by department", 
+                      xaxis = list(title = "", tickangle = -45),
+                      yaxis = list(title = "number of purchase"),
+         margin = list(b = 100),
+         barmode = 'group')
+
+fig
+```
+
+#### **Sales Patterns**
+
+Here, we would like to observe the pattern of sales in depth by
+splitting into departments. First, it is the pattern of weekly sales.
+<br>
+
+```{r, fig.height=8, fig.width=12}
+sales_weekly <- user_purchases %>%
+  group_by(order_dow, department)%>%
+  summarise(count_byday=n())
+
+plot_sales_weekly <- sales_weekly %>%
+  ggplot(aes(x=order_dow,
+             y=count_byday,
+             group=department,
+             color=department))+
+  geom_line()+
+  facet_wrap(~department, nrow=6, scales = 'free_y')+
+  theme(legend.position = "bottom", legend.key.size = unit(10, "pt"))+
+  labs(title = "Weekly sales pattern")
+
+plot_sales_weekly
+```
+
+From these graphs, we could observe the patterns as follow:
+
+* Most of the departments, except Alcohol, have similar pattern. The peak of the numbers of purchase are on Sunday and Monday, and tend to decrease during the weekday, and then start to increase on Friday.
+* For Alcohol, the figure increases slightly from the trough on Monday and reaches the top on Friday, then decreases sharply on Saturday.
+
+### **PCA by department**
+
+We will use PCA to analyze whether if we could reduce dimension of the
+data set (The number of order by department).
+
+PCA explains the similarity of variables. There are two metrics which
+are correlation(scaled) and covariance(non scaled). In our analysis, we
+focus on the relationship between the number of order from each
+department and day-of-week that users purchase. Thus, we will focus our
+PCA analysis on non-scale, i.e. using covariance. However, it would be
+interesting to see the differences of the results between scale and
+non-scaled PCAs as well, so we will also perform the PCA analysis with
+correlations.
+
+#### ***Non-scaled PCA (Covariance)***
+
+We observe that the first and second components explain 46.7% and 13.8%
+of variance of the data. Referring to the rule of thumb which selects
+the number of dimensions that allow to explain at least 75% of the
+variation, therefore comp1 - comp5 are selected and around 79.8% of
+variance of the data are explained.
+
+Our findings are as follows:
+
+* Produce has the highest variation. Also, it is highly positively correlated with Dim1 and negatively correlated with Dim2
+* The other departments including the second to sixth largest variance variables(Dairy egg, Snacks, Frozen, Beverages and Pantry) are positively correlated with Dim1 and Dim2.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data_pca_department <- user_purchases %>% 
+                  select(order_id, department) %>%
+                  group_by(order_id, department) %>%
+                  summarise(ordered_num = n()) %>%
+                  pivot_wider(names_from = "department", values_from = "ordered_num")
+
+data_pca_department[is.na(data_pca_department)] <- 0 #replace NA with 0
+
+pca_department <- PCA(data_pca_department[,-1], scale.unit = FALSE)
+#pca_department
+pca_department_eig <- as.data.frame(pca_department$eig)
+
+kable(pca_department_eig[1:10,], caption = "Variance contribution from non-scaled PCA") %>% kable_styling(bootstrap_options = "bordered") %>%
+    kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+#### ***Scaled PCA (Correlation)***
+
+We find that the first and second components can explain only 13.6% and
+6.6% respectively, and we need 15 components (out of 21) to explain 75%
+of the variation. This means that correlations between departments are
+very low and we cannot use PCA to reduce the dimensions of the scaled
+data.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="70%"}
+pca_department <- PCA(data_pca_department[,-1], scale.unit = TRUE)
+#pca_department
+
+pca_department_eig_scale <- as.data.frame(pca_department$eig)
+kable(pca_department_eig_scale[1:15,], caption = "Variance contribution from non-scaled PCA") %>% kable_styling(bootstrap_options = "bordered") %>%
+    kableExtra::scroll_box(width = "100%", height = "250px")
+```
